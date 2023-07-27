@@ -17,18 +17,17 @@ from time import sleep
 import argparse
 
 parser = argparse.ArgumentParser(description="PAX Generator for Preservica Uploads - Specifically for Digitisation")
-parser.add_argument("-i","--input",required=True, nargs='+',default=os.getcwd())
-parser.add_argument("-o","--output",required=True, nargs='+',default=os.getcwd())
+parser.add_argument("-i","--input",required=True, nargs='?',default=os.getcwd())
+parser.add_argument("-o","--output",required=False, nargs='?')
 parser.add_argument("-f","--filter",required=False,nargs="+")
-parser.add_arguement("-a","--argument")
 args = parser.parse_args()
 
 root_path = args.input
-dest_root = args.output
-filterlist = args.filter
+if not args.output: 
+    dest_root = args.input
+else: dest_root = args.output
 
-if not dest_root:
-    dest_root = root_path
+filterlist = args.filter
 
 if not os.path.exists(dest_root):
     os.makedirs(dest_root)
@@ -41,7 +40,7 @@ def file_detect(dir):
             else: file_flag = False
     return file_flag
 
-def structure_create_dir (dir, flag):
+def structure_create_dir(dir, flag):
     basename = os.path.basename(dir)
     if flag == "Access": representation = "Representation_Access"
     elif flag == "Pres": representation = "Representation_Preservation"
@@ -52,7 +51,12 @@ def structure_create_dir (dir, flag):
         shutil.copy2(file,dest_path)
         shutil.make_archive(dest_path,'zip',file)
 
-def structure_create_zip (dir, flag):
+def create_pax_folder(dest_root):
+    if os.path.exists(os.path.join(dest_root,"PAX")):
+        pass
+    else: os.makedirs(os.path.join(dest_root,"PAX"))
+
+def structure_create_zip(dir, flag):
     dir_basename = os.path.basename(dir)
     if flag == "Access": representation = "Representation_Access"
     elif flag == "Pres": representation = "Representation_Preservation"
@@ -83,10 +87,12 @@ def dir_loop(dir):
         if filterlist:
             print(f'Filtering enabled: filtering for {filterlist}')
             if filterlist in dir:
-                print('Files in here')
+                print('Filtered Match')
                 structure_create_zip(dir,rep_flag)
             else: 'Print override set passing'
-
+        else:
+            print(f'Filtering disabled: processing all')
+            structure_create_zip(dir,rep_flag)
     for d in os.listdir(dir):
         npath = os.path.join(dir,d)
         if os.path.isdir(npath):
@@ -94,13 +100,16 @@ def dir_loop(dir):
         if os.path.isfile(npath):
             pass
             #print(os.pardir(npath))
+
 if __name__ == "__main__":
     # file = r"D:\HD039 Townsweb\Leverhulme Batch 4\PAX\GB1752.LBC-213-1.pax.zip"
     # info = zipfile.ZipFile(file)
     # with zipfile.ZipFile(file,mode='r') as archive:
     #     archive.printdir()
     os.chdir(root_path)
+    create_pax_folder(dest_root)
     for dir in os.listdir(root_path):
+        print(f'Processing {dir}')
         if "Tiff" in dir:
             rep_flag = "Pres"
             dir = os.path.join(root_path,dir)
